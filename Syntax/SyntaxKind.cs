@@ -1,35 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Compilador_AII.Syntax
+﻿namespace Compilador_AII.Syntax
 {
     public enum SyntaxKind
     {
-        BadToken,
-        EndOfFileToken,
-        WhiteSpaceToken,
-        CommentToken,
+        // --- TOKENS DE CONTROL (0 - 9) ---
+        EndOfFileToken = 0,
+        WhiteSpaceToken = 1,
+        CommentToken = 2,
 
-        // Literales
-        IntegerToken,   // [0-9]+
-        FloatToken,     // [0-9]+.[0-9]+
-        IdentifierToken,// Variables
+        // --- VALORES E IDENTIFICADORES (10 - 19) ---
+        IntegerToken = 10,
+        FloatToken = 11,
+        IdentifierToken = 12,
 
-        // Operadores
-        PlusToken, MinusToken, StarToken, SlashToken,
-        EqualsToken, BangEqualsToken, LessToken,
-        LessOrEqualsToken, GreaterToken, GreaterOrEqualsToken,
-        DotToken, DotDotToken, ColonToken, ColonEqualsToken,
+        // --- OPERADORES Y PUNTUACIÓN (20 - 49) ---
+        PlusToken = 20,              // +
+        MinusToken = 21,             // -
+        StarToken = 22,              // *
+        SlashToken = 23,             // /
+        EqualsToken = 24,            // =
+        BangEqualsToken = 25,        // /=
+        LessToken = 26,              // <
+        LessOrEqualsToken = 27,      // <=
+        GreaterToken = 28,           // >
+        GreaterOrEqualsToken = 29,   // >=
+        ColonToken = 30,             // :
+        ColonEqualsToken = 31,       // :=
+        DotToken = 32,               // .
+        DotDotToken = 33,            // ..
+        CommaToken = 34,             // ,
+        SemicolonToken = 35,         // ;
+        OpenParenthesisToken = 36,   // (
+        CloseParenthesisToken = 37,  // )
 
-        // Delimitadores
-        OpenParenthesisToken, CloseParenthesisToken, CommaToken, SemicolonToken,
+        // --- PALABRAS RESERVADAS DE SPARK (50 - 99) ---
+        ProcedureKeyword = 50,
+        IsKeyword = 51,
+        BeginKeyword = 52,
+        EndKeyword = 53,
+        IntegerKeyword = 54,
+        FloatKeyword = 55,
+        WhileKeyword = 56,
+        LoopKeyword = 57,
+        IfKeyword = 58,
+        ThenKeyword = 59,
+        ElseKeyword = 60,
+        ExitKeyword = 61,
+        WhenKeyword = 62,
+        PutKeyword = 63,
 
-        // Palabras Reservadas
-        ProcedureKeyword, IsKeyword, BeginKeyword, EndKeyword, IfKeyword,
-        ThenKeyword, ElseKeyword, WhileKeyword, LoopKeyword, ExitKeyword,
-        WhenKeyword, PutKeyword, IntegerKeyword, FloatKeyword
+        // --- ERRORES ---
+        BadToken = 100               // Tokens no reconocidos o ilegales
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Compilador_AII.Syntax
 {
@@ -18,12 +14,17 @@ namespace Compilador_AII.Syntax
             var lexer = new Lexer(text);
             SyntaxToken token;
 
-            // Consumimos todos los tokens del Lexer y los guardamos en una lista
+            // ========================================================
+            // CAMBIO 1: El Lexer escupe los tokens y aquí filtramos
+            // los espacios, comentarios y la BASURA (BadToken)
+            // ========================================================
             do
             {
                 token = lexer.NextToken();
-                // Ignoramos espacios en blanco y comentarios para el árbol sintáctico
-                if (token.Kind != SyntaxKind.WhiteSpaceToken && token.Kind != SyntaxKind.CommentToken)
+
+                if (token.Kind != SyntaxKind.WhiteSpaceToken &&
+                    token.Kind != SyntaxKind.CommentToken &&
+                    token.Kind != SyntaxKind.BadToken) // Ignoramos la basura léxica para no romper el árbol
                 {
                     tokens.Add(token);
                 }
@@ -43,7 +44,6 @@ namespace Compilador_AII.Syntax
 
         private SyntaxToken Current => Peek(0);
 
-        // Avanza al siguiente token
         private SyntaxToken NextToken()
         {
             var current = Current;
@@ -51,15 +51,15 @@ namespace Compilador_AII.Syntax
             return current;
         }
 
-        // Si el token actual es el que esperamos (ej. esperamos un '+'), lo consume. Si no, lanza un error.
         private SyntaxToken MatchToken(SyntaxKind kind)
         {
             if (Current.Kind == kind)
                 return NextToken();
 
             Diagnostics.Add($"ERROR SINTÁCTICO: Se esperaba <{kind}> pero se encontró <{Current.Kind}> en la posición '{Current.Position}'.");
-            return new SyntaxToken(kind, Current.Position, null, null); // Fabricamos un token falso para no romper el compilador
+            return new SyntaxToken(kind, Current.Position, null, null);
         }
+
         // Regla 1: PROGRAMA
         public ProgramSyntax ParseProgram()
         {
@@ -67,12 +67,9 @@ namespace Compilador_AII.Syntax
             var startId = MatchToken(SyntaxKind.IdentifierToken);
             var isKw = MatchToken(SyntaxKind.IsKeyword);
 
-            // Regla 2: VARS
             var declarations = ParseDeclarations();
 
             var beginKw = MatchToken(SyntaxKind.BeginKeyword);
-
-            // Regla 7: LISTA_SENTENCIAS
             var statements = ParseStatements();
 
             var endKw = MatchToken(SyntaxKind.EndKeyword);
@@ -82,18 +79,16 @@ namespace Compilador_AII.Syntax
             return new ProgramSyntax(procedureKw, startId, isKw, declarations, beginKw, statements, endKw, endId, dotToken);
         }
 
-        // Reglas 3, 4 y 5: DECLARACION (Maneja variables separadas por comas)
+        // Reglas 3, 4 y 5: DECLARACION
         private List<DeclarationSyntax> ParseDeclarations()
         {
             var declarations = new List<DeclarationSyntax>();
 
-            // Mientras veamos un Identificador, asumimos que es una declaración
             while (Current.Kind == SyntaxKind.IdentifierToken)
             {
                 var identifiers = new List<SyntaxToken>();
                 identifiers.Add(MatchToken(SyntaxKind.IdentifierToken));
 
-                // Si hay comas, leemos más identificadores (Regla 5)
                 while (Current.Kind == SyntaxKind.CommaToken)
                 {
                     NextToken(); // Consumimos la coma
@@ -102,16 +97,14 @@ namespace Compilador_AII.Syntax
 
                 var colon = MatchToken(SyntaxKind.ColonToken);
 
-                // Tipo puede ser Integer o Float
                 SyntaxToken typeKw;
                 if (Current.Kind == SyntaxKind.IntegerKeyword || Current.Kind == SyntaxKind.FloatKeyword)
                     typeKw = NextToken();
                 else
-                    typeKw = MatchToken(SyntaxKind.IntegerKeyword); // Forzamos error si no es tipo válido
+                    typeKw = MatchToken(SyntaxKind.IntegerKeyword);
 
                 declarations.Add(new DeclarationSyntax(identifiers, colon, typeKw));
-
-                MatchToken(SyntaxKind.SemicolonToken); // Toda declaración termina en ;
+                MatchToken(SyntaxKind.SemicolonToken);
             }
             return declarations;
         }
@@ -121,14 +114,24 @@ namespace Compilador_AII.Syntax
         {
             var statements = new List<StatementSyntax>();
 
-            // Mientras no encontremos 'end' o 'else', seguimos leyendo sentencias
             while (Current.Kind != SyntaxKind.EndKeyword &&
                    Current.Kind != SyntaxKind.ElseKeyword &&
                    Current.Kind != SyntaxKind.EndOfFileToken)
             {
+                // ========================================================
+                // CAMBIO 2: Sistema Antibloqueo (Panic Mode)
+                // ========================================================
+                var startToken = Current;
+
                 var statement = ParseStatement();
                 statements.Add(statement);
-                MatchToken(SyntaxKind.SemicolonToken); // Toda sentencia en Spark termina en ;
+                MatchToken(SyntaxKind.SemicolonToken);
+
+                // Si el parser no consumió ningún token (se trabó con un error), lo forzamos a avanzar
+                if (Current == startToken)
+                {
+                    NextToken();
+                }
             }
 
             return statements;
@@ -139,17 +142,12 @@ namespace Compilador_AII.Syntax
         {
             switch (Current.Kind)
             {
-                case SyntaxKind.IfKeyword:
-                    return ParseIfStatement();
-                case SyntaxKind.WhileKeyword:
-                    return ParseWhileStatement();
-                case SyntaxKind.ExitKeyword:
-                    return ParseExitStatement();
-                case SyntaxKind.PutKeyword:
-                    return ParsePutStatement();
+                case SyntaxKind.IfKeyword: return ParseIfStatement();
+                case SyntaxKind.WhileKeyword: return ParseWhileStatement();
+                case SyntaxKind.ExitKeyword: return ParseExitStatement();
+                case SyntaxKind.PutKeyword: return ParsePutStatement();
                 case SyntaxKind.IdentifierToken:
                 default:
-                    // Si empieza con Identificador, por regla 9 es una ASIGNACION
                     return ParseAssignment();
             }
         }
@@ -213,18 +211,16 @@ namespace Compilador_AII.Syntax
             return new PutSyntax(putKw, open, expr, close);
         }
 
-        // Método principal que inicia la construcción del árbol
+        // EXPRESIONES MATEMÁTICAS (Reglas 15 a 21)
         public ExpressionSyntax Parse()
         {
             return ParseExpression();
         }
 
-        // Regla 15 y 16: EXPRESION -> EXP_SIMPLE RELACION EXP_SIMPLE
         private ExpressionSyntax ParseExpression()
         {
             var left = ParseSimpleExpression();
 
-            // Verificamos si hay un operador relacional (Regla 16)
             while (Current.Kind == SyntaxKind.EqualsToken ||
                    Current.Kind == SyntaxKind.BangEqualsToken ||
                    Current.Kind == SyntaxKind.LessToken ||
@@ -233,14 +229,13 @@ namespace Compilador_AII.Syntax
                    Current.Kind == SyntaxKind.GreaterOrEqualsToken)
             {
                 var operatorToken = NextToken();
-                var right = ParseSimpleExpression(); // Parseamos el lado derecho
+                var right = ParseSimpleExpression();
                 left = new BinaryExpressionSyntax(left, operatorToken, right);
             }
 
             return left;
         }
 
-        // Regla 17 y 18: EXP_SIMPLE -> TERMINO RESTO_EXP (Sumas y Restas)
         private ExpressionSyntax ParseSimpleExpression()
         {
             var left = ParseTerm();
@@ -255,7 +250,6 @@ namespace Compilador_AII.Syntax
             return left;
         }
 
-        // Regla 19 y 20: TERMINO -> FACTOR RESTO_TERM (Multiplicación y División)
         private ExpressionSyntax ParseTerm()
         {
             var left = ParseFactor();
@@ -270,19 +264,16 @@ namespace Compilador_AII.Syntax
             return left;
         }
 
-        // Regla 21: FACTOR -> id | num_entero | num_float | ( EXPRESION )
         private ExpressionSyntax ParseFactor()
         {
-            // Caso 1: ( EXPRESION )
             if (Current.Kind == SyntaxKind.OpenParenthesisToken)
             {
-                var left = NextToken(); // Consumimos '('
-                var expression = ParseExpression(); // Volvemos a empezar desde arriba (Recursividad)
-                var right = MatchToken(SyntaxKind.CloseParenthesisToken); // Exigimos el ')'
+                var left = NextToken();
+                var expression = ParseExpression();
+                var right = MatchToken(SyntaxKind.CloseParenthesisToken);
                 return new ParenthesizedExpressionSyntax(left, expression, right);
             }
 
-            // Caso 2: id | num_entero | num_float
             if (Current.Kind == SyntaxKind.IntegerToken ||
                 Current.Kind == SyntaxKind.FloatToken ||
                 Current.Kind == SyntaxKind.IdentifierToken)
@@ -291,12 +282,8 @@ namespace Compilador_AII.Syntax
                 return new LiteralExpressionSyntax(literalToken);
             }
 
-            // Si no es nada de eso, es un error sintáctico
             Diagnostics.Add($"ERROR SINTÁCTICO: Se esperaba un número, identificador o '(' pero se encontró <{Current.Kind}> en la posición '{Current.Position}'.");
-
-            // Fabricamos un nodo falso para que el compilador no crashee
             return new LiteralExpressionSyntax(new SyntaxToken(SyntaxKind.BadToken, Current.Position, null, null));
         }
-
     }
 }
