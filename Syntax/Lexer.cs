@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Compilador_AII.Syntax
 {
@@ -9,41 +10,42 @@ namespace Compilador_AII.Syntax
         public List<string> Diagnostics { get; } = new List<string>();
 
         // =========================================================================
-        // MATRIZ DE TRANSICIONES (Filas: Estados, Columnas: Alfabeto)
+        // MATRIZ DE TRANSICIÓN CLÁSICA (Con Estados Intermedios y -1 para terminar)
+        // Columnas (13): 
+        // 0:L | 1:D | 2:_ | 3:. | 4:: | 5:= | 6:< | 7:> | 8:/ | 9:- | 10:Espacio | 11:Simbolos(+ * ( ) ; , =) | 12:Errores
         // =========================================================================
         private readonly int[,] _matriz = new int[,]
         {
-            // L   D   _   .   :   =   <   >   /   Esp Sim Err   (COLUMNAS)
-            {  1,  2, -1,  9,  5, -1,  6,  7,  8, 16, 15, -1 }, // Estado 0: Inicial (q0)
-            {  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 1: Identificador
-            { -1,  2, -1,  3, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 2: Numero Entero
-            { -1,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 3: Vio un punto tras entero
-            { -1,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 4: Numero Flotante
-            { -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1 }, // Estado 5: Vio ':'
-            { -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1 }, // Estado 6: Vio '<'
-            { -1, -1, -1, -1, -1, 12, -1, -1, -1, -1, -1, -1 }, // Estado 7: Vio '>'
-            { -1, -1, -1, -1, -1, 13, -1, -1, -1, -1, -1, -1 }, // Estado 8: Vio '/'
-            { -1, -1, -1, 14, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 9: Vio '.' inicial
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 10: Asignacion (:=)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 11: Menor o Igual (<=)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 12: Mayor o Igual (>=)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 13: Diferente (/=)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 14: Rango (..)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // Estado 15: Simbolos de 1 char (+, -)
-            { -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1 }  // Estado 16: Espacios en blanco
+            // L   D   _   .   :   =   <   >   /   -  Esp Sim Err
+            {  1,  3, -1, 14,  6, 18,  8, 10, 12, 16, 19, 18, -1 }, // q0: Inicial
+            {  1,  1,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q1: Identificador
+            {  1,  1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q2: Id Intermedio (espera letra/digito tras el _)
+            { -1,  3, -1,  4, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q3: Entero
+            { -1,  5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q4: Flotante Intermedio (espera digito tras el .)
+            { -1,  5, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q5: Flotante Final
+            { -1, -1, -1, -1, -1,  7, -1, -1, -1, -1, -1, -1, -1 }, // q6: Dos puntos (:)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q7: Asignacion (:=)
+            { -1, -1, -1, -1, -1,  9, -1, -1, -1, -1, -1, -1, -1 }, // q8: Menor (<)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q9: Menor o igual (<=)
+            { -1, -1, -1, -1, -1, 11, -1, -1, -1, -1, -1, -1, -1 }, // q10: Mayor (>)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q11: Mayor o igual (>=)
+            { -1, -1, -1, -1, -1, 13, -1, -1, -1, -1, -1, -1, -1 }, // q12: Diagonal (/)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q13: Diferente (/=)
+            { -1, -1, -1, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q14: Punto (.)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q15: Rango (..)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q16: Resta (-)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q17: Comentario (Manejado por Lookahead abajo)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 }, // q18: Simbolos 1 char (+, *, (, ), ;, ,, =)
+            { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 19, -1, -1 }  // q19: Espacios
         };
 
-        public Lexer(string text)
-        {
-            _text = text;
-        }
+        public Lexer(string text) { _text = text; }
 
         private char Current => _position >= _text.Length ? '\0' : _text[_position];
         private char Lookahead => _position + 1 >= _text.Length ? '\0' : _text[_position + 1];
-
         private void Next() => _position++;
 
-        private int ObtenerColumnaAlfabeto(char c)
+        private int ObtenerColumna(char c)
         {
             if (char.IsLetter(c)) return 0;
             if (char.IsDigit(c)) return 1;
@@ -54,12 +56,11 @@ namespace Compilador_AII.Syntax
             if (c == '<') return 6;
             if (c == '>') return 7;
             if (c == '/') return 8;
-            if (char.IsWhiteSpace(c)) return 9;
+            if (c == '-') return 9;
+            if (char.IsWhiteSpace(c)) return 10;
+            if ("+*();,".Contains(c)) return 11;
 
-            if (c == '+' || c == '-' || c == '*' || c == '(' || c == ')' || c == ';' || c == ',')
-                return 10;
-
-            return 11;
+            return 12; // Error de caracter (Ej. @, #)
         }
 
         public SyntaxToken NextToken()
@@ -67,103 +68,91 @@ namespace Compilador_AII.Syntax
             if (_position >= _text.Length)
                 return new SyntaxToken(SyntaxKind.EndOfFileToken, _position, "\0", null);
 
-            // ========================================================
-            // PRE-FILTRO: IGNORAR COMENTARIOS
-            // ========================================================
+            // Filtro de Comentarios (Si ve dos guiones, consume toda la linea y retorna sin usar la matriz)
             if (Current == '-' && Lookahead == '-')
             {
                 var startComentario = _position;
-                while (_position < _text.Length && Current != '\n' && Current != '\r')
-                {
-                    Next();
-                }
-                var textComentario = _text.Substring(startComentario, _position - startComentario);
-                return new SyntaxToken(SyntaxKind.CommentToken, startComentario, textComentario, null);
+                while (_position < _text.Length && Current != '\n' && Current != '\r') Next();
+                return new SyntaxToken(SyntaxKind.CommentToken, startComentario, _text.Substring(startComentario, _position - startComentario), null);
             }
 
-            var start = _position;
-            int estadoActual = 0;
-            int ultimoEstadoAceptado = 0;
+            int start = _position;
+            int estado = 0;
 
-            // NAVEGACIÓN DE LA MATRIZ
+            // Bucle clasico: Viajamos hasta encontrar un -1
             while (_position < _text.Length)
             {
-                int columna = ObtenerColumnaAlfabeto(Current);
-                int siguienteEstado = _matriz[estadoActual, columna];
+                int columna = ObtenerColumna(Current);
+                int siguienteEstado = _matriz[estado, columna];
 
                 if (siguienteEstado == -1)
                     break;
 
-                estadoActual = siguienteEstado;
-                ultimoEstadoAceptado = estadoActual;
+                estado = siguienteEstado;
                 Next();
             }
 
-            var text = _text.Substring(start, _position - start);
+            // Si es 0 y se rompió el ciclo, es porque ingresaron basura desde el inicio
+            if (estado == 0 && _position == start)
+            {
+                var caracterMalo = Current.ToString();
+                Next();
+                Diagnostics.Add($"ERROR LÉXICO [{start}]: Caracter no reconocido -> '{caracterMalo}'");
+                return new SyntaxToken(SyntaxKind.Error_CaracterInvalido, start, caracterMalo, null);
+            }
 
-            return CrearTokenPorEstado(ultimoEstadoAceptado, start, text);
+            string text = _text.Substring(start, _position - start);
+            return CrearTokenPorEstado(estado, start, text);
         }
 
         private SyntaxToken CrearTokenPorEstado(int estado, int start, string text)
         {
+            SyntaxKind kind = SyntaxKind.Error_CaracterInvalido;
+            object value = null;
+
             switch (estado)
             {
-                case 1:
-                    if (text.EndsWith("_"))
+                case 1: kind = SyntaxFacts.GetKeywordKind(text); break; // Verifica si es palabra reservada o ID
+                case 3: kind = SyntaxKind.IntegerToken; value = int.Parse(text); break;
+                case 5: kind = SyntaxKind.FloatToken; value = double.Parse(text, System.Globalization.CultureInfo.InvariantCulture); break;
+                case 6: kind = SyntaxKind.ColonToken; break;
+                case 7: kind = SyntaxKind.ColonEqualsToken; break;
+                case 8: kind = SyntaxKind.LessToken; break;
+                case 9: kind = SyntaxKind.LessOrEqualsToken; break;
+                case 10: kind = SyntaxKind.GreaterToken; break;
+                case 11: kind = SyntaxKind.GreaterOrEqualsToken; break;
+                case 12: kind = SyntaxKind.SlashToken; break;
+                case 13: kind = SyntaxKind.BangEqualsToken; break;
+                case 14: kind = SyntaxKind.DotToken; break;
+                case 15: kind = SyntaxKind.DotDotToken; break;
+                case 16: kind = SyntaxKind.MinusToken; break;
+                case 18:
+                    // Mapeo de simbolos que caen en el estado 18
+                    switch (text)
                     {
-                        Diagnostics.Add($"ERROR LÉXICO [{start}]: El identificador '{text}' no puede terminar en guion bajo.");
-                        return new SyntaxToken(SyntaxKind.BadToken, start, text, null);
+                        case "+": kind = SyntaxKind.PlusToken; break;
+                        case "*": kind = SyntaxKind.StarToken; break;
+                        case "=": kind = SyntaxKind.EqualsToken; break;
+                        case "(": kind = SyntaxKind.OpenParenthesisToken; break;
+                        case ")": kind = SyntaxKind.CloseParenthesisToken; break;
+                        case ";": kind = SyntaxKind.SemicolonToken; break;
+                        case ",": kind = SyntaxKind.CommaToken; break;
                     }
-                    var kind = SyntaxFacts.GetKeywordKind(text);
-                    return new SyntaxToken(kind, start, text, null);
+                    break;
+                case 19: kind = SyntaxKind.WhiteSpaceToken; break;
 
-                case 2: return new SyntaxToken(SyntaxKind.IntegerToken, start, text, int.Parse(text));
-                case 4: return new SyntaxToken(SyntaxKind.FloatToken, start, text, double.Parse(text, System.Globalization.CultureInfo.InvariantCulture));
-
-                case 5: return new SyntaxToken(SyntaxKind.ColonToken, start, text, null);
-                case 6: return new SyntaxToken(SyntaxKind.LessToken, start, text, null);
-                case 7: return new SyntaxToken(SyntaxKind.GreaterToken, start, text, null);
-                case 8: return new SyntaxToken(SyntaxKind.SlashToken, start, text, null);
-                case 9: return new SyntaxToken(SyntaxKind.DotToken, start, text, null);
-
-                case 10: return new SyntaxToken(SyntaxKind.ColonEqualsToken, start, text, null);
-                case 11: return new SyntaxToken(SyntaxKind.LessOrEqualsToken, start, text, null);
-                case 12: return new SyntaxToken(SyntaxKind.GreaterOrEqualsToken, start, text, null);
-                case 13: return new SyntaxToken(SyntaxKind.BangEqualsToken, start, text, null);
-                case 14: return new SyntaxToken(SyntaxKind.DotDotToken, start, text, null);
-
-                case 15:
-                    return GenerarTokenSimple(text[0], start, text);
-
-                case 16: return new SyntaxToken(SyntaxKind.WhiteSpaceToken, start, text, null);
-
-                case 3:
-                case 0:
-                default:
-                    if (estado == 0 && text.Length == 0)
-                    {
-                        text = Current.ToString();
-                        Next();
-                    }
-                    Diagnostics.Add($"ERROR LÉXICO [{start}]: Texto no reconocido '{text}'");
-                    return new SyntaxToken(SyntaxKind.BadToken, start, text, null);
+                // --- MANEJO DE ESTADOS INTERMEDIOS (ERRORES) ---
+                case 2: // Se quedó a la mitad en un guion bajo
+                    kind = SyntaxKind.Error_IdentificadorInvalido;
+                    Diagnostics.Add($"ERROR LÉXICO [{start}]: Identificador no puede terminar en '_' -> '{text}'");
+                    break;
+                case 4: // Se quedó a la mitad en un punto decimal
+                    kind = SyntaxKind.Error_FlotanteIncompleto;
+                    Diagnostics.Add($"ERROR LÉXICO [{start}]: Flotante incompleto -> '{text}'");
+                    break;
             }
-        }
 
-        private SyntaxToken GenerarTokenSimple(char c, int start, string text)
-        {
-            switch (c)
-            {
-                case '+': return new SyntaxToken(SyntaxKind.PlusToken, start, text, null);
-                case '-': return new SyntaxToken(SyntaxKind.MinusToken, start, text, null);
-                case '*': return new SyntaxToken(SyntaxKind.StarToken, start, text, null);
-                case '=': return new SyntaxToken(SyntaxKind.EqualsToken, start, text, null);
-                case '(': return new SyntaxToken(SyntaxKind.OpenParenthesisToken, start, text, null);
-                case ')': return new SyntaxToken(SyntaxKind.CloseParenthesisToken, start, text, null);
-                case ';': return new SyntaxToken(SyntaxKind.SemicolonToken, start, text, null);
-                case ',': return new SyntaxToken(SyntaxKind.CommaToken, start, text, null);
-                default: return new SyntaxToken(SyntaxKind.BadToken, start, text, null);
-            }
+            return new SyntaxToken(kind, start, text, value);
         }
     }
 }

@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-
-namespace Compilador_AII.Syntax
+﻿namespace Compilador_AII.Syntax
 {
-    
     public class SyntaxToken
     {
         public SyntaxKind Kind { get; }
