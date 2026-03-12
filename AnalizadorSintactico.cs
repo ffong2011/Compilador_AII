@@ -58,16 +58,24 @@ namespace Compilador_All
             else MatchTipo(TipoToken.FLOAT);
         }
 
+       // REGLA 4: LISTA_ID -> id RESTO_LISTA
         private void ListaID()
         {
             MatchTipo(TipoToken.ID);
+            RestoLista();
+        }
+
+        // REGLA 5: RESTO_LISTA -> , id RESTO_LISTA | epsilon
+        private void RestoLista()
+        {
             if (actual.Tipo == TipoToken.COMA)
             {
                 MatchTipo(TipoToken.COMA);
-                ListaID();
+                MatchTipo(TipoToken.ID);
+                RestoLista(); // Recursividad para seguir buscando más variables
             }
+            // Epsilon: Si no hay coma, simplemente no hace nada y termina la recursión
         }
-
         private void ListaSentencias()
         {
             // Mientras el token actual sea algo que inicia una sentencia
