@@ -1,8 +1,8 @@
-﻿namespace Compilador_AII
+﻿namespace Compilador_All
 {
     public static class TipoToken
     {
-        // Reservadas
+        // Palabras reservadas
         public const int PROCEDURE = 101;
         public const int IS = 102;
         public const int BEGIN = 103;
@@ -18,36 +18,37 @@
         public const int INTEGER = 113;
         public const int FLOAT = 114;
 
+        // Identificadores y números
         public const int ID = 200;
-
         public const int NUM_ENTERO = 300;
         public const int NUM_FLOAT = 301;
 
-        public const int ASIGNACION = 401;
-        public const int IGUAL = 402;
-        public const int DISTINTO = 403;
-        public const int MENOR = 404;
-        public const int MAYOR = 405;
-        public const int MENOR_IGUAL = 406;
-        public const int MAYOR_IGUAL = 407;
+        // Operadores y Símbolos
+        public const int ASIGNACION = 401; // :=
+        public const int IGUAL = 402;      // =
+        public const int MAYOR = 403;      // >
+        public const int MENOR = 405;      // <
+        public const int MENOR_IGUAL = 406;// <=
+        public const int MAYOR_IGUAL = 407;// >=
+        public const int MAS = 408;        // +
+        public const int MENOS = 409;      // -
+        public const int MULT = 410;       // *
+        public const int DIV = 411;        // /
+        public const int DISTINTO = 412;   // /=
 
-        public const int MAS = 408;
-        public const int MENOS = 409;
-        public const int MULT = 410;
-        public const int DIV = 411;
+        public const int PUNTO_Y_COMA = 501; // ;
+        public const int DOS_PUNTOS = 502;   // :
+        public const int COMA = 503;         // ,
+        public const int PAR_ABRE = 504;     // (
+        public const int PAR_CIERRA = 505;   // )
+        public const int PUNTO = 506;        // .
+        public const int RANGO = 507;        // ..
 
-        public const int PUNTO_Y_COMA = 501;
-        public const int DOS_PUNTOS = 502;
-        public const int COMA = 503;
-        public const int PAR_ABRE = 504;
-        public const int PAR_CIERRA = 505;
-        public const int PUNTO = 506;
-        public const int RANGO = 507;
+        public const int COMENTARIO = 600;   // --
 
-        public const int COMENTARIO = 600;
-
-        public const int ERROR_ID = 901;
-        public const int ERROR_NUM = 902;
-        public const int ERROR_SIMBOLO = 903;
+        // Errores
+        public const int ERROR_ID = 900;
+        public const int ERROR_NUM = 901;
+        public const int ERROR_SIMBOLO = 902;
     }
 }

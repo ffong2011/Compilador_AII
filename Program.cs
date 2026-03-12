@@ -1,66 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-using System;
-using System.Collections.Generic;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-using System;
-using System.Collections.Generic;
-using System.IO;
-
-namespace Compilador_AII
+namespace Compilador_All
 {
     class Program
     {
         static void Main(string[] args)
         {
-            string ruta = @"C:\Users\sebsa\Desktop\PROGRAMMING SHI\CompiladorAM\CompiladorAM\src\compiladoram\codigo.txt";
+            string ruta = @"C:\Users\sebsa\Documents\escuela de mierda\codigo.txt";
 
-            if (!File.Exists(ruta))
+            try
             {
-                Console.WriteLine("Archivo no encontrado.");
-                Console.ReadKey();
-                return;
-            }
-
-            AnalizadorLexico lexico = new AnalizadorLexico(ruta);
-            List<Token> tokens = lexico.Escanear();
-
-            foreach (var token in tokens)
-                Console.WriteLine(token);
-
-            Console.ReadKey();
-        }
-    }
-}
-
-try
-            {
+                Console.WriteLine("Iniciando análisis léxico...");
                 AnalizadorLexico lexico = new AnalizadorLexico(ruta);
                 List<Token> tokens = lexico.Escanear();
 
-                Console.WriteLine("\n===== TOKENS GENERADOS =====\n");
-
+                Console.WriteLine("\n===== TOKENS GENERADOS =====");
                 foreach (var token in tokens)
                 {
                     Console.WriteLine(token);
                 }
+
+                Console.WriteLine("\nIniciando análisis sintáctico...");
+                AnalizadorSintactico sintactico = new AnalizadorSintactico(tokens);
+                sintactico.Programa();
+
+                // Si llega hasta aquí sin lanzar excepción (Error), significa que triunfaste
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\n¡Análisis Sintáctico Exitoso! El código cumple con las reglas de Spark.");
+                Console.ResetColor();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("❌ Error al procesar el archivo:");
-                Console.WriteLine(ex.Message);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\n" + ex.Message);
+                Console.ResetColor();
             }
 
             Console.WriteLine("\nPresione una tecla para salir...");
